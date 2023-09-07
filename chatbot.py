@@ -20,11 +20,11 @@ load_dotenv(find_dotenv())
 YT_URL = "https://www.youtube.com/watch?v=tLS6t3FVOTI"
 SAVE_DIR = 'downloads'
 
-TOOL_DESC = ("""This tool is the video provided to you by the user.Use this tool to answer user questions
-    using video by Aandrew Huberman. If the user asks about the video or podcast use this tool to get the answer.
+# Description of the tool that indicates the AI assitant when to use it
+TOOL_DESC = ("""This tool is the video of the podcast episode provided to you by the user.Use this tool to answer user questions
+    using video of the podcast episode by Aandrew Huberman. If the user asks about the video or podcast episode use this tool to get the answer.
     This tool also can be used for follow up questions by the user. When user asks about Andrew Huberman use this tool.
-    When user wants to know something about or from the video use this tool. This tool is the transcript
-    of the video.""")
+    This tool is the transcript of the video.""")
 
 if os.path.exists(SAVE_DIR):
     print(f"Directory: {SAVE_DIR} exists")
@@ -58,7 +58,9 @@ def get_pinecone_db(chunk_docs, embs):
     
     return search
 
-def app():
+def setup_yt_knowledge_agent():
+    """Setting up the conversational yt video knowledge base agent"""
+    
     # Getting yt id on link change   
     yt_id = get_yt_id(YT_URL)
     
@@ -97,22 +99,26 @@ def app():
         early_stopping_method='generate',
         memory=conv_memory,
         verobse=True
-)
-    
+    )
+    return agent
+
+def app():
     
     st.set_page_config(page_title="Youtube Video Chatbot")
     st.title("Youtube Video Chatbot :clapper: :parrot: :link:")
     st.markdown("This is chatbot app based on a GPT 3.5 model which allows you to ask it questions about the YT video of your choice."+ 
-                "Default video chosen is **'Developing a Rational Approach to Supplementation for Health & Performance' by Andrew Huberman**, but you can changed it to anything you want")
+                "The chosen video  is **'Developing a Rational Approach to Supplementation for Health & Performance' by Andrew Huberman**")
          
      
     st.subheader("Your YT Video Assistant")
     
+    # Setting the conversation agent if not present in the session state
     if "conversation" not in st.session_state:
-        st.session_state.conversation = agent
+        st.session_state.conversation = setup_yt_knowledge_agent()   
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-        
+     
+    # Showing the whole conversation on every rerun 
     for message in st.session_state.chat_history:     
         with st.chat_message("assistant" if isinstance(message, AIMessage) else "user"):
             st.markdown(message.content)     
@@ -124,6 +130,7 @@ def app():
         response = st.session_state.conversation.run(prompt)
         st.chat_message("assistant").markdown(response)
         
+        # Storing the conversation to display
         st.session_state.chat_history = st.session_state.conversation.memory.chat_memory.messages
 
 
