@@ -9,7 +9,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import  RetrievalQA
+from langchain.chains import  RetrievalQA, ConversationalRetrievalChain
 from langchain.tools import Tool
 from langchain.agents import initialize_agent
 from langchain.schema.messages import HumanMessage, AIMessage
@@ -77,30 +77,36 @@ def setup_yt_knowledge_agent():
     conv_memory = ConversationBufferMemory(
         llm=llm, memory_key='chat_history', return_messages=True)
     
-    qa_chain = RetrievalQA.from_chain_type(
+    qa_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=search.as_retriever(),
-        chain_type='stuff'
+        memory=conv_memory
     )
     
-
+    # Uncomment to use fully conversational chatbot with wider knowledge base
+    
+    # qa_chain = RetrievalQA.from_chain_type(
+    #     llm=llm,
+    #    retriever=search.as_retriever(),
+    #    chain_type='stuff'
+    # )
     # Creating tool containing knowledge base about the video
-    tools = [Tool(
-        name='Video DB',
-        func=qa_chain.run,
-        description=TOOL_DESC)]
+    # tools = [Tool(
+    #     name='Video DB',
+    #     func=qa_chain.run,
+    #     description=TOOL_DESC)]
     
     # Initializing conversational agent
-    agent = initialize_agent(
-        agent='chat-conversational-react-description',
-        tools=tools,
-        llm=llm, 
-        max_iterations=3, # Limiting how many times the agent can loop through the tool
-        early_stopping_method='generate',
-        memory=conv_memory,
-        verobse=True
-    )
-    return agent
+    # agent = initialize_agent(
+    #     agent='chat-conversational-react-description',
+    #     tools=tools,
+    #     llm=llm, 
+    #     max_iterations=3, # Limiting how many times the agent can loop through the tool
+    #     early_stopping_method='generate',
+    #     memory=conv_memory,
+    #     verobse=True
+    # )
+    return qa_chain
 
 def app():
     
